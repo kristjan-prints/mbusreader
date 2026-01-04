@@ -1,0 +1,45 @@
+# Copy this file to /etc/systemd/system folder and execute "sudo systemctl daemon-reload".
+# Each time changes are made to this file, then "sudo systemctl daemon-reload" must be executed again.
+# In order for service to autostart with the computer, execute "sudo systemctl enable --now mbusreader.service"
+# Service control commands:     "sudo systemctl start mbusreader.service --no-pager"
+#                               "sudo systemctl stop mbusreader.service --no-pager"
+#                               "sudo systemctl restart mbusreader.service --no-pager"
+#                               "sudo systemctl status mbusreader.service --no-pager"
+#
+# Service logs can be viewed by "journalctl -u mbusreader.service -f"
+#                               "journalctl -u mbusreader.service -n 200 -f"                        - for 200 lines
+#                               "journalctl -u mbusreader.service -b -f"                            - for everything since boot
+#                               "journalctl -u mbusreader.service --since "2026-01-14 00:00:00" -f" - from specific time
+
+[Unit]
+Description=MBus Reader
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=kasutaja
+Group=kasutaja
+
+WorkingDirectory=/home/kasutaja/git/mbusreader
+EnvironmentFile=/etc/mbusreader/mbusreader.env
+
+# Good defaults for services
+Environment=PYTHONUNBUFFERED=1
+
+ExecStart=/home/kasutaja/git/mbusreader/.venv/bin/python -m uvicorn app.main:app \
+  --host 0.0.0.0 --port 8443 \
+  --ssl-certfile /etc/mbusreader/tls/mbusreader.crt \
+  --ssl-keyfile /etc/mbusreader/tls/mbusreader.key \
+  --proxy-headers
+
+Restart=on-failure
+RestartSec=2
+
+# If you ever see "address already in use" on restart, consider:
+# ExecStopPost=/bin/sleep 1
+
+[Install]
+WantedBy=multi-user.target
