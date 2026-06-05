@@ -18,6 +18,18 @@ This is a working personal/home-lab system, not a general-purpose product. It is
 - Run scheduled meter reads every 15 minutes.
 - Optionally sync locally stored meter data to RPP.
 
+## What this demonstrates
+
+This project demonstrates:
+
+- A small FastAPI service for reading M-Bus power meter data on Raspberry Pi.
+- Scheduled quarter-hour meter reading with timestamp alignment.
+- Local persistence of cumulative meter readings.
+- Manual insert/update/delete/reconciliation endpoints for repairing meter history.
+- Token-protected operational API endpoints.
+- Integration with the RPP Django backend through M2M synchronization/upload.
+- Regression tripwires for runtime configuration validity, timestamp alignment, API validation, and safe manual update behavior.
+
 ## Runtime
 
 - Application: FastAPI / Uvicorn
@@ -27,6 +39,27 @@ This is a working personal/home-lab system, not a general-purpose product. It is
 - Production env file: `/etc/mbusreader/mbusreader.env`
 - Production service: `mbusreader.service`
 - HTTPS port: `8443`
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Scheduler[APScheduler] --> Reader[M-Bus meter reader]
+    Reader -->|stores readings| LocalDB[(Local SQLite database)]
+
+    API[FastAPI API] -->|manual insert/update/delete/sync| LocalDB
+
+    LocalDB -->|meter readings| Sync[RPP sync/upload client]
+    Sync -->|M2M API| RPP[RPP backend]
+```
+
+## Real hardware setup
+
+The production setup uses a Raspberry Pi with DIN-rail power supplies, M-Bus-connected power meters, and local circuit protection.
+
+![Raspberry Pi, power supplies, circuit breakers, and M-Bus power meters](docs/rpi-mbus-power-meters.jpg)
+
+This photo shows one real installation of the system. It is not intended as an electrical wiring guide.
 
 ## Configuration
 
